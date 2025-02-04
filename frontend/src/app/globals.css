@@ -1,0 +1,122 @@
+:root {
+  --background-color-dark: #181818;
+  --text-color-dark: rgba(255, 255, 255, 0.87);
+  --background-color-light: #fff;
+  --text-color-light: #181818;
+  --button-background: #ffffff;
+  --button-text-color: #000000;
+
+  background-color: var(--background-color-dark);
+  color: var(--text-color-dark);
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-synthesis: none;
+  font-weight: 400;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    background-color: var(--background-color-light);
+    color: var(--text-color-light);
+  }
+}
+
+h1, h2 {
+  color:#ffffff;
+}
+
+.button-menu {
+  background-color: #574444;
+  color: #ffffff;
+}
+
+.button-reserve {
+  background-color: #4CAF50; /* Vert pour réservation */
+  color: #ffffff;
+}
+
+.button-profile {
+  background-color: #2196F3; /* Bleu pour profil */
+  color: #ffffff;
+}
+
+.button-disconnect {
+  background-color: #F44336; /* Rouge pour déconnexion */
+  color: #ffffff;
+}
+
+.travel-card {
+  background-color: var(--background-color-light);
+  color: var(--text-color-dark);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: box-shadow 0.3s;
+}
+
+.travel-card:hover {
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.button-login {
+  padding: 10px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: 100%;
+  background-color: var(--button-background);
+  color: var(--button-text-color);
+  margin-right: 10px;
+}
+
+div {
+  padding: 20px;
+}
+
+.centered-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column; 
+  align-items: center;
+  padding: 20px;
+  background-color: #333;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.input-search {
+  padding: 10px 15px;
+  width: 100%;
+  max-width: 600px; 
+  margin-bottom: 20px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.input-search:focus {
+  border-color: #0056b3;
+  box-shadow: 0 0 8px rgba(0, 86, 179, 0.2);
+}
