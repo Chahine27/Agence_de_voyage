@@ -29,32 +29,36 @@ contract TravelAgency is ReentrancyGuard, Ownable {
         bool verified;
     }
     
-    mapping(uint256 => Booking) public bookings;
-    mapping(uint256 => uint256) public travelIdToReservationNumber;
-    mapping(address => uint256[]) public customerBookings;
-    mapping(uint256 => Review[]) public bookingReviews;
-    mapping(address => bool) public hasReviewed;
+    mapping(uint256 => Booking) public bookings; // 1 => booking[1]
+    mapping(uint256 => uint256) public travelIdToReservationNumber; // travelIdToReservationNumber[num de reservation de l'api] = num créer par le mart contract 
+    mapping(address => uint256[]) public customerBookings; //il stoque genre chaques adresse as une reservation 
+    mapping(uint256 => Review[]) public bookingReviews; // tableau de tt les commentaires de reservation 
+    mapping(address => bool) public hasReviewed; // si il as laisser un avis 
     
+    //pour les allerte 
     event ReservationCreated(uint256 indexed reservationNumber, uint256 indexed travelId, address indexed traveler);
     event PaymentReceived(uint256 indexed reservationNumber, uint256 amount);
     event BookingCompleted(uint256 indexed reservationNumber);
     event ReviewAdded(uint256 indexed reservationNumber, address indexed reviewer, uint8 rating);
     event BookingCompletedAndVerified(uint256 indexed reservationNumber, address indexed traveler);
     
+    //je initialise le contract 
     constructor(address _tokenAddress) Ownable(msg.sender) {
         travelToken = TravelToken(_tokenAddress);
     }
     
+    //generer un id pour reservation 
     function generateReservationNumber() private returns (uint256) {
         bookingCounter++;
         return bookingCounter;
     }
     
+
 function processPayment(address _traveler, uint256 _amount) private returns (bool) {
-    uint256 tokenAmount = _amount * 10 ** 18;
+    uint256 tokenAmount = _amount * 10 ** 18; //c'est comme ça que ça marche le tocken ERC20 pour generer les decimal 
     require(travelToken.balanceOf(_traveler) >= tokenAmount, "Insufficient tokens");
-    require(travelToken.allowance(_traveler, address(this)) >= tokenAmount, "Not approved");
-    require(travelToken.transferFrom(_traveler, address(this), tokenAmount), "Payment failed");
+    require(travelToken.allowance(_traveler, address(this)) >= tokenAmount, "Not approved");//allowance elle ous permet de vérifier si on as approuver genre l'adresse a donner l'autorisation au contrat d'etuliser ses tocken 
+    require(travelToken.transferFrom(_traveler, address(this), tokenAmount), "Payment failed"); //pour faire le transfert des tockens 
     return true;
 }
 
@@ -66,8 +70,8 @@ function createReservation(
    require(_travelerAddress != address(0), "Invalid traveler address");
    require(travelIdToReservationNumber[_travelId] == 0, "Travel ID already booked");
    
-   //uint256 _price = getTravelPrice(_travelId);
-   uint256 _price =1;
+   //uint256 _price = getTravelPrice(_travelId); // la on doit faire l'appelle a l'api 
+   uint256 _price =1; //c'est juste pour tester mais sinon on prend le commentaire en haut 
    require(_price > 0, "Invalid price");
    
    processPayment(_travelerAddress, _price);
@@ -87,7 +91,7 @@ function createReservation(
    
    bookings[reservationNumber] = newBooking;
    travelIdToReservationNumber[_travelId] = reservationNumber;
-   customerBookings[_travelerAddress].push(reservationNumber);
+   customerBookings[_travelerAddress].push(reservationNumber);// pour generer la liste des reservation d'un client 
    
    emit ReservationCreated(reservationNumber, _travelId, _travelerAddress);
    emit PaymentReceived(reservationNumber, _price * 10 ** 18);
@@ -99,21 +103,7 @@ function createReservation(
    return 1 ether;
 }*/
     
-function payReservation(uint256 _reservationNumber) external nonReentrant {
-    Booking storage booking = bookings[_reservationNumber];
-    require(booking.traveler == msg.sender, "Not the booking owner");
-    require(!booking.isPaid, "Already paid");
-    
-    uint256 tokenAmount = booking.price * 10 ** 18; 
-    require(travelToken.balanceOf(msg.sender) >= tokenAmount, "Insufficient tokens");
-    
-    booking.isPaid = true;
-    require(travelToken.transferFrom(msg.sender, address(this), tokenAmount), "Transfer failed");
-    
-    emit PaymentReceived(_reservationNumber, tokenAmount);
-}
-
-    function getReservationDetails(uint256 _reservationNumber) external view returns (
+   function getReservationDetails(uint256 _reservationNumber) external view returns (
         uint256 travelId,
         address traveler,
         uint256 price,
@@ -144,8 +134,7 @@ function payReservation(uint256 _reservationNumber) external nonReentrant {
     function completeBooking(uint256 _reservationNumber) external onlyOwner {
         Booking storage booking = bookings[_reservationNumber];
         require(booking.isPaid, "Booking not paid");
-        require(!booking.isCompleted, "Already completed");
-        
+        require(!booking.isCompleted, "Already completed");  
         booking.isCompleted = true;
         emit BookingCompletedAndVerified(_reservationNumber, booking.traveler);
     }
