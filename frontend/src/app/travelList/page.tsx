@@ -128,6 +128,16 @@ export default function TravelList() {
                             <p style={{color: 'black'}}>Prix: {travel.price}</p>
                             <button
                                 className="button-reserve"
+                                onClick={() => {
+                                    const reservationData = {
+                                        travel,
+                                        address,
+                                        balance: balance?.formatted,
+                                        chainId: publicClient.chain?.id,
+                                        chainName: publicClient.chain?.name,
+                                    };
+                                    router.push(`/reservationDetail?data=${encodeURIComponent(JSON.stringify(reservationData))}`);
+                                }}
                             >
                                 Réserver
                             </button>
