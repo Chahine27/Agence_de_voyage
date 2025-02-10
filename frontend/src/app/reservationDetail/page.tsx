@@ -3,6 +3,8 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAccount, useBalance, usePublicClient } from 'wagmi';
+import { parseEther } from 'viem';
+import { useTravelToken, useTravelAgency } from '@/lib/web3/hooks/useContract';
 
 type Hotel = {
     name: string;
@@ -26,11 +28,55 @@ export default function ReservationDetail() {
     const searchParams = useSearchParams();
     const [travel, setTravel] = useState<Travel | null>(null);
     const [userData, setUserData] = useState<{ address: string; balance: string; chainId: number; chainName: string } | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string>('');
 
     // Récupération des informations du compte
     const { address } = useAccount();
     const { data: balance } = useBalance({ address });
     const publicClient = usePublicClient();
+    const { buyTokens, balance: tokenBalance } = useTravelToken();
+    const { createReservation } = useTravelAgency();
+
+    // Ajout des fonctions de gestion des transactions
+    const handleBuyTokens = async () => {
+        if (!travel?.price) return;
+        setError('');
+        
+        try {
+            setLoading(true);
+            const priceInWei = parseEther(travel.price);
+            const hash = await buyTokens(priceInWei);
+            await publicClient.waitForTransactionReceipt({ hash });
+        } catch (error) {
+            console.error('Error buying tokens:', error);
+            setError('Failed to purchase tokens. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReserve = async () => {
+        if (!travel?.id || !address || !travel.price) return;
+        setError('');
+        
+        try {
+            setLoading(true);
+            const hash = await createReservation(
+                travel.id,
+                address as `0x${string}`,
+                !!travel.hotel,
+                travel.price
+            );
+            await publicClient.waitForTransactionReceipt({ hash });
+            router.push('/travelList');
+        } catch (error) {
+            console.error('Error creating reservation:', error);
+            setError('Failed to create reservation. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         const data = searchParams.get('data');
@@ -69,7 +115,31 @@ export default function ReservationDetail() {
                 )}
                 <p>Départ: {new Date(travel.dateDepart).toLocaleString()}</p>
                 <p>Arrivée: {new Date(travel.dateArrivee).toLocaleString()}</p>
-                <p className="font-bold">Prix: {travel.price}</p>
+                <p className="font-bold">Prix: {travel.price} TRVL</p>
+
+                <div className="mt-6 space-y-4">
+                    <button 
+                        onClick={handleBuyTokens}
+                        disabled={loading}
+                        className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+                    >
+                        {loading ? 'Processing...' : 'Buy Travel Tokens'}
+                    </button>
+                    
+                    <button
+                        onClick={handleReserve}
+                        disabled={loading || !tokenBalance || tokenBalance < parseEther(travel.price)}
+                        className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
+                    >
+                        {loading ? 'Processing...' : 'Confirm Reservation'}
+                    </button>
+                </div>
+
+                {error && (
+                    <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
+                        {error}
+                    </div>
+                )}
             </div>
 
             <div style={{ display: 'none' }}>

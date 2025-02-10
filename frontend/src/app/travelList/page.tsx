@@ -80,6 +80,7 @@ export default function TravelList() {
                                 >
                                     Voir Profil
                                 </button>
+                                
                                 <button
                                     onClick={handleDisconnect}
                                     className="button-disconnect block w-full text-left px-4 py-2 hover:bg-gray-100"
