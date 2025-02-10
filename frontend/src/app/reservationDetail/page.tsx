@@ -23,6 +23,14 @@ type Travel = {
     dateArrivee: string;
 };
 
+interface TransactionStatus {
+    loading: boolean;
+    error: string | null;
+    success: boolean;
+    step: 'idle' | 'buying' | 'approving' | 'reserving' | 'completed';
+    message: string;
+}
+
 export default function ReservationDetail() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -38,45 +46,128 @@ export default function ReservationDetail() {
     const { buyTokens, balance: tokenBalance } = useTravelToken();
     const { createReservation } = useTravelAgency();
 
-    // Ajout des fonctions de gestion des transactions
+    const [txStatus, setTxStatus] = useState<TransactionStatus>({
+        loading: false,
+        error: null,
+        success: false,
+        step: 'idle',
+        message: ''
+    });
+
     const handleBuyTokens = async () => {
         if (!travel?.price) return;
-        setError('');
         
         try {
-            setLoading(true);
+            setTxStatus({
+                loading: true,
+                error: null,
+                success: false,
+                step: 'buying',
+                message: 'Initialisation de l\'achat de tokens...'
+            });
+            
             const priceInWei = parseEther(travel.price);
+            
+            setTxStatus(prev => ({
+                ...prev,
+                message: 'Veuillez confirmer la transaction dans votre wallet...'
+            }));
+
             const hash = await buyTokens(priceInWei);
+
+            setTxStatus(prev => ({
+                ...prev,
+                message: 'Transaction en cours. Attente de confirmation...'
+            }));
+
             await publicClient.waitForTransactionReceipt({ hash });
+            
+            setTxStatus({
+                loading: false,
+                error: null,
+                success: true,
+                step: 'completed',
+                message: 'Tokens achetés avec succès!'
+            });
+
+            // Auto-hide success message after 5 seconds
+            setTimeout(() => {
+                setTxStatus(prev => ({
+                    ...prev,
+                    message: '',
+                    step: 'idle'
+                }));
+            }, 5000);
+
         } catch (error) {
             console.error('Error buying tokens:', error);
-            setError('Failed to purchase tokens. Please try again.');
-        } finally {
-            setLoading(false);
+            setTxStatus({
+                loading: false,
+                error: 'Échec de l\'achat de tokens. Veuillez réessayer.',
+                success: false,
+                step: 'idle',
+                message: ''
+            });
         }
     };
 
     const handleReserve = async () => {
         if (!travel?.id || !address || !travel.price) return;
-        setError('');
         
         try {
-            setLoading(true);
+            setTxStatus({
+                loading: true,
+                error: null,
+                success: false,
+                step: 'reserving',
+                message: 'Création de la réservation...'
+            });
+            
             const hash = await createReservation(
                 travel.id,
                 address as `0x${string}`,
                 !!travel.hotel,
                 travel.price
             );
+
+            setTxStatus(prev => ({
+                ...prev,
+                message: 'Réservation en cours de confirmation...'
+            }));
+
             await publicClient.waitForTransactionReceipt({ hash });
-            router.push('/travelList');
+            
+            setTxStatus({
+                loading: false,
+                error: null,
+                success: true,
+                step: 'completed',
+                message: 'Réservation confirmée avec succès!'
+            });
+
+            // Redirect after successful reservation
+            setTimeout(() => {
+                router.push('/travelList');
+            }, 3000);
+
         } catch (error) {
             console.error('Error creating reservation:', error);
-            setError('Failed to create reservation. Please try again.');
-        } finally {
-            setLoading(false);
+            setTxStatus({
+                loading: false,
+                error: 'Échec de la réservation. Veuillez réessayer.',
+                success: false,
+                step: 'idle',
+                message: ''
+            });
         }
     };
+
+    const getStatusColor = () => {
+        if (txStatus.error) return 'bg-red-100 text-red-700';
+        if (txStatus.success) return 'bg-green-100 text-green-700';
+        return 'bg-blue-100 text-blue-700';
+    };
+
 
     useEffect(() => {
         const data = searchParams.get('data');
@@ -116,37 +207,57 @@ export default function ReservationDetail() {
                 <p>Départ: {new Date(travel.dateDepart).toLocaleString()}</p>
                 <p>Arrivée: {new Date(travel.dateArrivee).toLocaleString()}</p>
                 <p className="font-bold">Prix: {travel.price} TRVL</p>
+                
+                {txStatus.message && (
+                    <div className={`mt-4 p-4 rounded ${getStatusColor()}`}>
+                        <div className="flex items-center">
+                            {txStatus.loading && (
+                                <svg className="" viewBox="">
+                                </svg>
+                            )}
+                            <span>{txStatus.message}</span>
+                        </div>
+                    </div>
+                )}
 
                 <div className="mt-6 space-y-4">
                     <button 
                         onClick={handleBuyTokens}
-                        disabled={loading}
-                        className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+                        disabled={txStatus.loading}
+                        className={`w-full px-4 py-2 text-white rounded transition-all
+                            ${txStatus.loading 
+                                ? 'bg-gray-400 cursor-not-allowed' 
+                                : 'bg-blue-500 hover:bg-blue-600'}`}
                     >
-                        {loading ? 'Processing...' : 'Buy Travel Tokens'}
+                        {txStatus.loading && txStatus.step === 'buying' 
+                            ? 'Transaction en cours...' 
+                            : 'Acheter des Tokens'}
                     </button>
                     
                     <button
                         onClick={handleReserve}
-                        disabled={loading || !tokenBalance || tokenBalance < parseEther(travel.price)}
-                        className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
+                        disabled={txStatus.loading || !tokenBalance || tokenBalance < parseEther(travel?.price || '0')}
+                        className={`w-full px-4 py-2 text-white rounded transition-all
+                            ${txStatus.loading || !tokenBalance || tokenBalance < parseEther(travel?.price || '0')
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-green-500 hover:bg-green-600'}`}
                     >
-                        {loading ? 'Processing...' : 'Confirm Reservation'}
+                        {txStatus.loading && txStatus.step === 'reserving'
+                            ? 'Réservation en cours...'
+                            : 'Confirmer la Réservation'}
                     </button>
                 </div>
 
-                {error && (
+                {txStatus.error && (
                     <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
-                        {error}
+                        {txStatus.error}
                     </div>
                 )}
-            </div>
 
-            <div style={{ display: 'none' }}>
-                <p>Address: {userData?.address}</p>
-                <p>Balance: {userData?.balance} ETH</p>
-                <p>Chain ID: {userData?.chainId}</p>
-                <p>Chain Name: {userData?.chainName}</p>
+                <div className="mt-4 text-sm text-gray-600">
+                    <p>Balance actuelle: {tokenBalance ? Number(tokenBalance) / 10**18 : 0} TRVL</p>
+                    <p>Prix du voyage: {travel?.price} TRVL</p>
+                </div>
             </div>
         </div>
     );

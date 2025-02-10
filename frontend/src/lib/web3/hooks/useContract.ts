@@ -129,7 +129,7 @@ export function useTravelAgency() {
               abi: TravelAgencyABI,
               functionName: 'createReservation',
               args: [BigInt(travelId), travelerAddress, isHotelIncluded],
-              value: priceInWei
+              //value: priceInWei
           });
 
           return hash;
