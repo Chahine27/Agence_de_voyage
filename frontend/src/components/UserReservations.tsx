@@ -135,7 +135,6 @@ export function UserReservations() {
         loadData();
     }, [address, publicClient]);
 
-    // ... reste du code pour le rendu
 
     return (
         <Card className="mt-6">

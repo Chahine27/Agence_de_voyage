@@ -6,6 +6,7 @@ import {
 } from 'wagmi';
 import { parseEther } from 'viem';
 import { getAddresses } from '../contracts/addresses';
+import { useEffect, useState } from 'react';
 
 type Address = `0x${string}`;
 

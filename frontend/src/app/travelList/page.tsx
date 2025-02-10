@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useAccount, useDisconnect, useBalance, usePublicClient } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { fetchTravelOffers } from '../api';
+//import { UserReservations } from '../reservationDetail/components/UserReservations';
+import { UserReservations } from '@/components/UserReservations';
 
 type Hotel = {
     name: string;
@@ -33,6 +35,7 @@ export default function TravelList() {
     const publicClient = usePublicClient();
     const [dateFilter, setDateFilter] = useState('');
     const [includeHotel, setIncludeHotel] = useState(false);
+    const [showReservations, setShowReservations] = useState(false);
 
 
     useEffect(() => {
@@ -80,13 +83,34 @@ export default function TravelList() {
                                 >
                                     Voir Profil
                                 </button>
-                                
+                                <button
+                                    onClick={() => setShowReservations(true)}
+                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                                >
+                                    Mes Réservations
+                                </button>
                                 <button
                                     onClick={handleDisconnect}
                                     className="button-disconnect block w-full text-left px-4 py-2 hover:bg-gray-100"
                                 >
                                     Déconnexion
                                 </button>
+                            </div>
+                        )}
+                        {showReservations && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-xl font-bold">Mes Réservations</h2>
+                                        <button 
+                                            onClick={() => setShowReservations(false)}
+                                            className="text-gray-500 hover:text-gray-700"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                    <UserReservations />
+                                </div>
                             </div>
                         )}
                         <p>Address: {address}</p>
